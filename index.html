@@ -82,6 +82,7 @@ body{background:#f7f6f2;min-height:100vh;display:flex;align-items:center;justify
   <div class="nav-row">
     <button class="nav-btn" id="prevBtn" onclick="go(-1)">← 이전</button>
     <button class="today-btn" onclick="goToday()">오늘로</button>
+    <button class="today-btn" onclick="resetDay()" style="color:#c0392b;border-color:#f0c0b8">↺ 처음부터</button>
     <button class="nav-btn" id="nextBtn" onclick="go(1)">다음 →</button>
   </div>
   <div class="date-row" id="dateRow"></div>
@@ -195,12 +196,20 @@ const DATA=[
 const liked=JSON.parse(localStorage.getItem('wc_liked')||'[]');
 let cur=0;
 let animating=false;
+let todayDay=0;
 
-function todayIdx(){
+function initDay(){
   let day=parseInt(localStorage.getItem('wc_day')||'0',10);
   day=day+1;
   localStorage.setItem('wc_day',day);
-  return Math.min(day-1,99);
+  todayDay=Math.min(day-1,99);
+}
+
+function resetDay(){
+  if(!confirm('처음(DAY 1)부터 다시 시작할까요?'))return;
+  localStorage.removeItem('wc_day');
+  localStorage.removeItem('wc_liked');
+  location.reload();
 }
 
 function fill(){
@@ -263,8 +272,7 @@ function jump(idx){
 }
 
 function goToday(){
-  const t=todayIdx();
-  jump(t);
+  jump(todayDay);
 }
 
 function toggleHeart(){
@@ -274,7 +282,8 @@ function toggleHeart(){
   fill();
 }
 
-cur=todayIdx();
+initDay();
+cur=todayDay;
 fill();
 </script>
 </body>
