@@ -15,10 +15,19 @@ body{background:#f7f6f2;min-height:100vh;display:flex;align-items:center;justify
 .prog-bar{width:72px;height:2px;background:#ddd;border-radius:99px;overflow:hidden}
 .prog-fill{height:100%;border-radius:99px;background:#888;transition:width .5s ease}
 .prog-txt{font-size:11px;color:#aaa}
-.card{background:#fff;border:1px solid #eee;border-radius:22px;padding:2.4rem 2rem 2rem;position:relative;overflow:hidden;min-height:290px;display:flex;flex-direction:column;box-shadow:0 2px 20px rgba(0,0,0,.06);transition:transform .35s ease,opacity .35s ease}
-.card.out-left{transform:translateX(-50px);opacity:0}
-.card.out-right{transform:translateX(50px);opacity:0}
-.card.visible{transform:translateX(0);opacity:1}
+
+.card{
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:22px;
+  padding:2.4rem 2rem 2rem;
+  position:relative;
+  overflow:hidden;
+  min-height:290px;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 2px 20px rgba(0,0,0,.06);
+}
 .deco1{position:absolute;top:-55px;right:-55px;width:180px;height:180px;border-radius:50%;background:#f7f6f2;pointer-events:none}
 .deco2{position:absolute;bottom:-38px;left:-38px;width:120px;height:120px;border-radius:50%;background:#f0efe9;pointer-events:none}
 .day-num{font-size:11px;font-weight:500;color:#bbb;letter-spacing:.12em;margin-bottom:1.3rem;position:relative;z-index:1}
@@ -29,17 +38,26 @@ body{background:#f7f6f2;min-height:100vh;display:flex;align-items:center;justify
 .heart-btn{background:none;border:1px solid #e0e0e0;border-radius:99px;padding:6px 16px;cursor:pointer;font-size:12px;color:#888;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'Noto Sans KR',sans-serif}
 .heart-btn:hover{background:#fafafa}
 .heart-btn.liked{border-color:#c0392b;color:#c0392b}
+
 .nav-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:1.3rem}
-.nav-btn{background:none;border:1px solid #e0e0e0;border-radius:99px;padding:8px 20px;cursor:pointer;font-size:12px;color:#666;font-family:'Noto Sans KR',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px}
+.nav-btn{background:none;border:1px solid #e0e0e0;border-radius:99px;padding:8px 20px;cursor:pointer;font-size:12px;color:#666;font-family:'Noto Sans KR',sans-serif;transition:all .2s}
 .nav-btn:hover{background:#f5f5f5}
 .nav-btn:disabled{opacity:.25;cursor:default;pointer-events:none}
 .today-btn{font-size:11px;font-weight:500;color:#aaa;padding:6px 16px;border-radius:99px;border:1px solid #e8e8e8;cursor:pointer;background:none;font-family:'Noto Sans KR',sans-serif;transition:all .2s}
 .today-btn:hover{background:#f5f5f5}
+
 .date-row{text-align:center;font-size:11px;color:#bbb;margin-top:1rem}
 .dot-row{display:flex;justify-content:center;gap:3px;margin-top:1rem;flex-wrap:wrap;max-width:340px;margin-left:auto;margin-right:auto}
 .dot{width:5px;height:5px;border-radius:50%;background:#ddd;cursor:pointer;transition:all .2s}
 .dot.past{background:#aaa}
 .dot.now{background:#333;transform:scale(1.5)}
+
+.fade-out{animation:fadeOut .25s ease forwards}
+.fade-in{animation:fadeIn .25s ease forwards}
+@keyframes fadeOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-30px)}}
+@keyframes fadeOutR{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(30px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInR{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
 </style>
 </head>
 <body>
@@ -51,7 +69,7 @@ body{background:#f7f6f2;min-height:100vh;display:flex;align-items:center;justify
       <span class="prog-txt" id="ptxt"></span>
     </div>
   </div>
-  <div class="card visible" id="card">
+  <div class="card" id="card">
     <div class="deco1"></div><div class="deco2"></div>
     <div class="day-num" id="dayNum"></div>
     <span class="qmark">"</span>
@@ -69,6 +87,7 @@ body{background:#f7f6f2;min-height:100vh;display:flex;align-items:center;justify
   <div class="date-row" id="dateRow"></div>
   <div class="dot-row" id="dotRow"></div>
 </div>
+
 <script>
 const DATA=[
 ["작은 습관이 인생을 만든다","하루 10분이라도 꾸준히 하는 사람이 결국 강해진다. 기도도, 공부도, 운동도 마찬가지다."],
@@ -176,41 +195,27 @@ const DATA=[
 const START=new Date('2025-01-01');
 const liked=JSON.parse(localStorage.getItem('wc_liked')||'[]');
 let cur=0;
+let animating=false;
 
 function todayIdx(){
   const d=Math.floor((new Date()-START)/864e5);
   return Math.min(Math.max(d%100,0),99);
 }
 
-function render(dir){
-  const card=document.getElementById('card');
-  const cls=dir===-1?'out-right':dir===1?'out-left':null;
-  if(cls){
-    card.classList.remove('visible');
-    card.classList.add(cls);
-    setTimeout(()=>{
-      card.classList.remove(cls);
-      card.style.opacity='0';
-      fill();
-      requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('visible')));
-    },300);
-  } else fill();
-}
-
 function fill(){
   const[title,body]=DATA[cur];
-  document.getElementById('dayNum').textContent=`DAY ${cur+1}`;
+  document.getElementById('dayNum').textContent='DAY '+(cur+1);
   document.getElementById('cardTitle').textContent=title;
   document.getElementById('cardBody').textContent=body;
   document.getElementById('pbar').style.width=(cur+1)+'%';
-  document.getElementById('ptxt').textContent=`${cur+1}/100`;
+  document.getElementById('ptxt').textContent=(cur+1)+'/100';
   const lk=liked.includes(cur);
   document.getElementById('heartBtn').className='heart-btn'+(lk?' liked':'');
   document.getElementById('heartTxt').textContent=lk?'담았어요':'마음에 담기';
   document.getElementById('prevBtn').disabled=cur===0;
   document.getElementById('nextBtn').disabled=cur===99;
   const n=new Date();
-  document.getElementById('dateRow').textContent=`${n.getFullYear()}년 ${n.getMonth()+1}월 ${n.getDate()}일`;
+  document.getElementById('dateRow').textContent=n.getFullYear()+'년 '+(n.getMonth()+1)+'월 '+n.getDate()+'일';
   buildDots();
 }
 
@@ -220,15 +225,47 @@ function buildDots(){
   for(let i=0;i<100;i++){
     const d=document.createElement('div');
     d.className='dot'+(i<cur?' past':i===cur?' now':'');
-    d.title=`${i+1}일차`;
-    d.onclick=(idx=>()=>jump(idx))(i);
+    d.title=(i+1)+'일차';
+    d.onclick=(function(idx){return function(){jump(idx)}})(i);
     row.appendChild(d);
   }
 }
 
-function go(dir){const n=cur+dir;if(n<0||n>99)return;cur=n;render(dir)}
-function jump(idx){if(idx===cur)return;const dir=idx>cur?1:-1;cur=idx;render(dir)}
-function goToday(){const t=todayIdx();if(t===cur)return;jump(t)}
+function go(dir){
+  if(animating)return;
+  const n=cur+dir;
+  if(n<0||n>99)return;
+  animating=true;
+  const card=document.getElementById('card');
+  const outAnim=dir===1?'fadeOut':'fadeOutR';
+  const inAnim=dir===1?'fadeInR':'fadeIn';
+  card.style.animation=outAnim+' .25s ease forwards';
+  setTimeout(function(){
+    cur=n;
+    fill();
+    card.style.animation=inAnim+' .25s ease forwards';
+    setTimeout(function(){
+      card.style.animation='';
+      animating=false;
+    },250);
+  },250);
+}
+
+function jump(idx){
+  if(idx===cur||animating)return;
+  const dir=idx>cur?1:-1;
+  cur=idx;
+  const card=document.getElementById('card');
+  card.style.animation='fadeIn .3s ease forwards';
+  fill();
+  setTimeout(function(){card.style.animation=''},300);
+}
+
+function goToday(){
+  const t=todayIdx();
+  jump(t);
+}
+
 function toggleHeart(){
   const i=liked.indexOf(cur);
   if(i>-1)liked.splice(i,1);else liked.push(cur);
@@ -237,7 +274,7 @@ function toggleHeart(){
 }
 
 cur=todayIdx();
-render(0);
+fill();
 </script>
 </body>
 </html>
