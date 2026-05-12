@@ -192,14 +192,15 @@ const DATA=[
 ["인생에서 가장 중요한 건 사랑이다","많이 가진 사람보다 사랑할 줄 아는 사람이 행복하다."]
 ];
 
-const START=new Date('2025-01-01');
 const liked=JSON.parse(localStorage.getItem('wc_liked')||'[]');
 let cur=0;
 let animating=false;
 
 function todayIdx(){
-  const d=Math.floor((new Date()-START)/864e5);
-  return Math.min(Math.max(d%100,0),99);
+  let day=parseInt(localStorage.getItem('wc_day')||'0',10);
+  day=day+1;
+  localStorage.setItem('wc_day',day);
+  return Math.min(day-1,99);
 }
 
 function fill(){
